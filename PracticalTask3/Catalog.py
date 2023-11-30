@@ -124,10 +124,52 @@ def search_books():
 
 
 def delete_book():
-    pass  # 本を削除する関数
+    delete_window = tk.Toplevel(root)
+    delete_window.title("Delete a Book")
+    delete_window.geometry('400x150')
+
+    tk.Label(delete_window, text="Enter the book's ISBN to delete:").pack()
+
+    isbn_entry = tk.Entry(delete_window)
+    isbn_entry.pack()
+    isbn_entry.focus_set()
+
+    def confirm_and_delete():
+        isbn_to_delete = isbn_entry.get().strip()
+        book_to_delete = None
+
+        for book in catalog:
+            if book.isbn == isbn_to_delete:
+                book_to_delete = book
+                break
+
+        if book_to_delete:
+            confirm = messagebox.askyesno("Confirm", f"Are you sure you want to delete '{book_to_delete.title}'?")
+            if confirm:
+                catalog.remove(book_to_delete)
+                messagebox.showinfo("Success", "The book has been deleted.")
+            else:
+                messagebox.showinfo("Cancelled", "Book deletion cancelled.")
+        else:
+            messagebox.showinfo("Not Found", "No book found with the given ISBN.")
+
+    tk.Button(delete_window, text="Delete", command=confirm_and_delete).pack()
+    tk.Button(delete_window, text="Close", command=delete_window.destroy).pack()
 
 def display_all_books():
-    pass  # すべての本を表示する関数
+    if not catalog:
+        messagebox.showinfo("Catalog", "There are no books in the catalog.")
+        return
+
+    display_window = tk.Toplevel(root)
+    display_window.title("All Books in Catalog")
+    display_window.geometry('500x300')
+
+    books_str = '\n'.join([f"ISBN: {book.isbn}, Title: {book.title}, Author: {book.author}, Price: ${book.price}" for book in catalog])
+    tk.Label(display_window, text="All Books in Catalog:", justify='left').pack()
+    tk.Label(display_window, text=books_str, justify='left').pack(side="top", fill="both", expand=True)
+    tk.Button(display_window, text="Close", command=display_window.destroy).pack()
+
 
 def exit_program():
     root.destroy()  # GUIウィンドウを閉じてプログラムを終了
@@ -155,6 +197,12 @@ entry_label = tk.Label(entry_frame, text="Enter menu choice:")
 entry_label.pack(side=tk.LEFT)
 entry = tk.Entry(entry_frame)
 entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
+
+def exit_program():
+    confirm = messagebox.askyesno("Confirm Exit", "Are you sure you want to exit?")
+    if confirm:
+        root.destroy()  # ユーザーが確認した場合、GUIウィンドウを閉じてプログラムを終了
+
 
 # ユーザーのメニュー選択に応じて関数を呼び出す
 def execute_choice(event=None):
