@@ -93,7 +93,34 @@ def sort_and_display():
 
 
 def search_books():
-    pass  # タイトルで本を検索する関数
+    search_window = tk.Toplevel(root)
+    search_window.title("Search a Book by Title")
+    search_window.geometry('300x150')
+
+    tk.Label(search_window, text="Enter the book's title:").pack()
+
+    title_entry = tk.Entry(search_window)
+    title_entry.pack()
+    title_entry.focus_set()
+
+    def perform_search():
+        search_title = title_entry.get().strip().lower()
+        if not catalog:
+            messagebox.showinfo("Search Result", "The catalog is empty.")
+            return
+
+        found_books = [book for book in catalog if search_title in book.title.lower()]
+
+        if found_books:
+            result = '\n'.join([f"ISBN: {book.isbn}, Title: {book.title}, Author: {book.author}, Price: ${book.price}" for book in found_books])
+            messagebox.showinfo("Search Result", f"Books found:\n{result}")
+        else:
+            messagebox.showinfo("Search Result", "No books found with the given title.")
+
+    tk.Button(search_window, text="Search", command=perform_search).pack()
+    tk.Button(search_window, text="Close", command=search_window.destroy).pack()
+
+
 
 def delete_book():
     pass  # 本を削除する関数
