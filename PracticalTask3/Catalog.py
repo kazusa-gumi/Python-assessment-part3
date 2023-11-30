@@ -11,7 +11,7 @@ catalog = [
 def add_book():
     add_window = tk.Toplevel(root)
     add_window.title("Add a New Book")
-    add_window.geometry('300x150')
+    add_window.geometry('400x200')
     fields = ['isbn', 'title', 'author', 'price']
     entries = {}
     index = 0
@@ -95,7 +95,7 @@ def sort_and_display():
 def search_books():
     search_window = tk.Toplevel(root)
     search_window.title("Search a Book by Title")
-    search_window.geometry('300x150')
+    search_window.geometry('400x200')
 
     tk.Label(search_window, text="Enter the book's title:").pack()
 
@@ -109,6 +109,7 @@ def search_books():
             messagebox.showinfo("Search Result", "The catalog is empty.")
             return
 
+        # 部分一致で書籍を検索
         found_books = [book for book in catalog if search_title in book.title.lower()]
 
         if found_books:
