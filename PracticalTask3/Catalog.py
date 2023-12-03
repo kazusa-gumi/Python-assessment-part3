@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from Book import Book
 
-# スタート時にカタログに本を追加します
+
 catalog = [
     Book("123456789", "Book A", "Author A", 9.99),
     Book("987654321", "Book B", "Author B", 14.99),
