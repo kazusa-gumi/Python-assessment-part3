@@ -3,90 +3,100 @@ from tkinter import messagebox
 from Book import Book
 
 
-catalog = [
-    Book("123456789", "Book A", "Author A", 9.99),
-    Book("987654321", "Book B", "Author B", 14.99),
-]
+catalog = []
 
 def add_book():
+    global catalog
     add_window = tk.Toplevel(root)
     add_window.title("Add a New Book")
     add_window.geometry('400x200')
-    fields = ['isbn', 'title', 'author', 'price']
-    entries = {}
-    index = 0
 
-    def display_next_field(idx):
+    fields = ['isbn', 'title', 'author', 'price']
+    entries = {field: "" for field in fields}
+
+    # 現在表示しているエントリーとラベルをクリアする内部関数
+    def clear_fields():
         for widget in add_window.winfo_children():
             widget.destroy()
 
-        label_text = fields[idx] if idx != len(fields) - 1 else "Enter the book's " + fields[idx] + " (numeric value):"
-        label = tk.Label(add_window, text=label_text)
-        label.pack()
+    # 各フィールドを表示する関数（idxは現在のフィールドのインデックス）
+    def display_next_field(entry, idx):
+        if entry is not None:
+            field_name = fields[idx - 1]
+            entries[field_name] = entry.get()  # 前のフィールドの値を保存
 
-        entry = tk.Entry(add_window)
-        entry.pack()
-        entries[fields[idx]] = entry
-        entry.focus_set()
+        clear_fields()  # 前のエントリーとラベルをクリア
 
-        if idx < len(fields) - 1:
-            next_button = tk.Button(add_window, text='OK', command=lambda: save_and_next(idx))
+        if idx < len(fields):
+            field = fields[idx]
+
+            # ラベルの設定
+            label = tk.Label(add_window, text=f"Enter the book's {field}:")
+            label.pack()
+
+            # エントリーの生成
+            next_entry = tk.Entry(add_window)
+            next_entry.pack()
+            next_entry.focus_set()
+
+            # 次へボタンまたは保存ボタン
+            next_button_text = 'Save' if idx == len(fields) - 1 else 'Next'
+            next_button = tk.Button(add_window, text=next_button_text,
+                                    command=lambda: display_next_field(next_entry, idx + 1))
             next_button.pack()
         else:
-            save_button = tk.Button(add_window, text='Save', command=save_and_close)
-            save_button.pack()
+            # 全部のエントリーが終わったら保存処理をする
+            save_and_close()
 
-        cancel_button = tk.Button(add_window, text='Cancel', command=add_window.destroy)
-        cancel_button.pack()
+    # 本の情報を保存してカタログに追加する関数
+    def save_and_close():
+        try:
+            # 入力された値を取得してtrim処理
+            isbn = entries['isbn'].strip()
+            title = entries['title'].strip()
+            author = entries['author'].strip()
 
-    def save_and_next(idx):
-        if not entries[fields[idx]].get().strip():
-            messagebox.showwarning("Warning", "Please do not leave the field empty.")
-        else:
-            if idx < len(fields) - 1:
-                display_next_field(idx + 1)
+            # priceの入力が数値に変換できるかチェック
+            try:
+                price = float(entries['price'].strip())
+            except ValueError:
+                raise ValueError("Please enter a valid number for price.")
 
-def save_and_close():
-    try:
-        isbn = entries['isbn'].get().strip()
-        title = entries['title'].get().strip()
-        author = entries['author'].get().strip()
-        price_str = entries['price'].get().strip()
+            # 全てのフィールドが入力されているかチェック
+            if not isbn or not title or not author or not price:
+                raise ValueError("All fields must be filled in!")
 
-        if not (isbn and title and author and price_str):
-            messagebox.showwarning("Warning", "Please fill in all fields.")
-            return
+            # ISBNがすでにカタログ内に存在するかチェック
+            for book in catalog:
+                if book.isbn == isbn:
+                    raise ValueError("A book with the same ISBN already exists in the catalog.")
 
-        price = float(price_str)
-        new_book = Book(isbn, title, author, price)
-        catalog.append(new_book)
-
-        messagebox.showinfo('Success', f'Book "{new_book.title}" has been added to the catalog.')
-    except ValueError:
-        messagebox.showerror('Error', 'Invalid price. Please enter a numeric value.')
-        return
-    except Exception as e:
-        messagebox.showerror('Error', f'An error occurred: {e}')
-        return
-    finally:
-        if add_book.winfo_exists():
-            add_book.destroy()
+            # Bookオブジェクトの作成
+            new_book = Book(isbn, title, author, price)
+            catalog.append(new_book)  # カタログに追加
+            messagebox.showinfo('Success', 'Book added successfully')
+            add_book.destroy()  # 成功メッセージの後、ウィンドウを閉じる
+        except ValueError as ve:
+            messagebox.showerror('Error', str(ve))
+            add_book.destroy()  # エラーメッセージの後、ウィンドウを閉じる
 
 
-    display_next_field(index)
+    # 最初のフィールドを表示する
+    display_next_field(None, 0)
 
 def sort_and_display():
     if not catalog:
         messagebox.showinfo("Catalog", "There are no books in the catalog.")
         return
 
-    # ISBNでソート
-    sorted_catalog = sorted(catalog, key=lambda book: book.isbn)
+    # 価格でソート
+    sorted_catalog = sorted(catalog, key=lambda book: book.price)
     catalog_str = '\n'.join([f"ISBN: {book.isbn}, Title: {book.title}, Author: {book.author}, Price: ${book.price}" for book in sorted_catalog])
     display_window = tk.Toplevel(root)
-    display_window.title("Catalog Sorted by ISBN")
+    display_window.title("Catalog Sorted by Price")
+    display_window.geometry('400x200')
 
-    tk.Label(display_window, text="Catalog Sorted by ISBN:").pack()
+    tk.Label(display_window, text="Catalog Sorted by Price:").pack()
     tk.Label(display_window, text=catalog_str, justify='left').pack(side="top", fill="both", expand=True)
     tk.Button(display_window, text="Close", command=display_window.destroy).pack()
 
@@ -104,22 +114,30 @@ def search_books():
     title_entry.focus_set()
 
     def perform_search():
-        search_title = title_entry.get().strip().lower()
+        search_title = title_entry.get().strip()
+        if not search_title:  # テキストが空、または空白のみの場合
+            messagebox.showinfo("Search Input Error", "The text has not been entered or only space.")
+            return
         if not catalog:
             messagebox.showinfo("Search Result", "The catalog is empty.")
             return
 
         # 部分一致で書籍を検索
-        found_books = [book for book in catalog if search_title in book.title.lower()]
+        found_books = [book for book in catalog if search_title.lower() in book.title.lower()]
 
         if found_books:
-            result = '\n'.join([f"ISBN: {book.isbn}, Title: {book.title}, Author: {book.author}, Price: ${book.price}" for book in found_books])
+            result = '\n'.join([
+                f"ISBN: {book.isbn}, Title: {book.title}, Author: {book.author}, Price: ${book.price}"
+                for book in found_books
+            ])
             messagebox.showinfo("Search Result", f"Books found:\n{result}")
         else:
             messagebox.showinfo("Search Result", "No books found with the given title.")
 
     tk.Button(search_window, text="Search", command=perform_search).pack()
+    # 削除された重複するボタン
     tk.Button(search_window, text="Close", command=search_window.destroy).pack()
+
 
 
 
@@ -147,9 +165,10 @@ def delete_book():
             confirm = messagebox.askyesno("Confirm", f"Are you sure you want to delete '{book_to_delete.title}'?")
             if confirm:
                 catalog.remove(book_to_delete)
-                messagebox.showinfo("Success", "The book has been deleted.")
+                messagebox.showinfo("Success", "Book HAS been deleted.")
+                delete_window.destroy()  # ウィンドウを閉じる
             else:
-                messagebox.showinfo("Cancelled", "Book deletion cancelled.")
+                messagebox.showinfo("Cancelled", "Book has NOT been deleted.")
         else:
             messagebox.showinfo("Not Found", "No book found with the given ISBN.")
 
@@ -179,24 +198,24 @@ root = tk.Tk()
 root.title("Book Catalog")
 
 # メニューボタンを作成
-button_frame = tk.Frame(root)
-button_frame.pack(side=tk.TOP, pady=(10, 0))
+title_label = tk.Label(root, text="-----Holmesglen Book Store-----", font=("Arial", 16))
+title_label.pack(side=tk.TOP, pady=(5, 10))
 
-tk.Button(button_frame, text="1. Add a Book", command=add_book).pack(fill=tk.X)
-tk.Button(button_frame, text="2. Sort and Display the Books by Price", command=sort_and_display).pack(fill=tk.X)
-tk.Button(button_frame, text="3. Search Books by Title", command=search_books).pack(fill=tk.X)
-tk.Button(button_frame, text="4. Delete a Book", command=delete_book).pack(fill=tk.X)
-tk.Button(button_frame, text="5. Display All Books", command=display_all_books).pack(fill=tk.X)
-tk.Button(button_frame, text="6. Exit", command=exit_program).pack(fill=tk.X)
+tk.Button(root, text="1. Add a Book", command=add_book).pack(fill=tk.X)
+tk.Button(root, text="2. Sort and Display the Books by ISBN", command=sort_and_display).pack(fill=tk.X)
+tk.Button(root, text="3. Search Books by Title", command=search_books).pack(fill=tk.X)
+tk.Button(root, text="4. Delete a Book", command=delete_book).pack(fill=tk.X)
+tk.Button(root, text="5. Display All Books", command=display_all_books).pack(fill=tk.X)
+tk.Button(root, text="6. Exit", command=exit_program).pack(fill=tk.X)
 
 # ユーザーの入力用エリア
 entry_frame = tk.Frame(root)
 entry_frame.pack(side=tk.TOP, pady=(5, 10))
 
-entry_label = tk.Label(entry_frame, text="Enter menu choice:")
-entry_label.pack(side=tk.LEFT)
-entry = tk.Entry(entry_frame)
-entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
+entry_label = tk.Label(root, text="Enter menu choice:")
+entry_label.pack(side=tk.LEFT, pady=(5, 10))
+entry = tk.Entry(root)
+entry.pack(side=tk.LEFT, expand=True, fill=tk.X, pady=(5, 10))
 
 def exit_program():
     confirm = messagebox.askyesno("Confirm Exit", "Are you sure you want to exit?")
